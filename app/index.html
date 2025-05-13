@@ -1,34 +1,224 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chat with ShashankBot</title>
+  <meta charset="UTF-8">
+  <title>Shashank's Personal Chatbot</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f3f3f3;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .dark-mode {
+      background-color: #121212;
+      color: #e0e0e0;
+    }
+
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 800px;
+      margin: 60px auto 20px auto;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 15px;
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.15);
+      height: calc(100vh - 100px);
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .dark-mode .chat-container {
+      background-color: #1e1e1e;
+      color: #e0e0e0;
+    }
+
+    .chat-header {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chat-box {
+      width: 100%;
+      flex-grow: 1;
+      overflow-y: auto;
+      margin-bottom: 10px;
+    }
+
+    .user-message, .bot-message {
+      margin: 8px 0;
+      padding: 10px 15px;
+      border-radius: 15px;
+      max-width: 100%;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+
+    .user-message {
+      background-color: #dceeff;
+      align-self: flex-start;
+    }
+
+    .bot-message {
+      background-color: #eeeeee;
+      align-self: flex-start;
+    }
+
+    .dark-mode .user-message {
+      background-color: #3b3f55;
+      color: white;
+    }
+
+    .dark-mode .bot-message {
+      background-color: #2c2c2c;
+      color: #e0e0e0;
+    }
+
+    .input-row {
+      display: flex;
+      width: 100%;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 8px 0 0 8px;
+      outline: none;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 14px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      border-radius: 0 8px 8px 0;
+      cursor: pointer;
+    }
+
+    .top-controls {
+      position: absolute;
+      right: 20px;
+      top: 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    .top-controls button {
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 6px;
+    }
+
+    .slider-labels {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    .sliders {
+      display: none;
+      flex-direction: column;
+      width: 200px;
+      gap: 10px;
+      padding-top: 10px;
+    }
+
+    .sliders input[type="range"] {
+      width: 100%;
+    }
+  </style>
 </head>
-<body style="font-family: sans-serif; padding: 2em; background: #f9f9f9;">
-  <h2>Shashank's Personal Chatbot</h2>
-  <p>Ask me anything about Shashank!</p>
+<body>
+  <div class="top-controls">
+    <button id="toggle-mode">Dark Mode</button>
+    <button id="toggle-sliders">Try Advanced Mode</button>
+    <div class="sliders" id="tone-sliders">
+      <label class="slider-labels">Humor</label>
+      <input type="range" id="humorSlider" min="0" max="100" value="0">
+      <label class="slider-labels">Professional</label>
+      <input type="range" id="professionalSlider" min="0" max="100" value="100">
+      <label class="slider-labels">Inspirational</label>
+      <input type="range" id="inspirationalSlider" min="0" max="100" value="0">
+    </div>
+  </div>
 
-  <input id="question" type="text" placeholder="Type your question..." style="width: 80%; padding: 0.5em;" />
-  <button onclick="askQuestion()">Ask</button>
-
-  <pre id="response" style="background: #eee; padding: 1em; white-space: pre-wrap; margin-top: 1em;"></pre>
+  <div class="chat-container">
+    <div class="chat-header">🤖 Shashank's Personal Chatbot</div>
+    <div class="chat-box" id="chat-box"></div>
+    <form class="input-row" id="chat-form">
+      <input type="text" id="user-input" placeholder="Ask me anything..." autocomplete="off">
+      <button type="submit">Send</button>
+    </form>
+  </div>
 
   <script>
-    async function askQuestion() {
-      const question = document.getElementById('question').value;
-      const responseBox = document.getElementById('response');
-      responseBox.innerText = 'Loading...';
+    const form = document.getElementById("chat-form");
+    const userInput = document.getElementById("user-input");
+    const chatBox = document.getElementById("chat-box");
+    const toggleMode = document.getElementById("toggle-mode");
+    const toggleSliders = document.getElementById("toggle-sliders");
+    const slidersDiv = document.getElementById("tone-sliders");
 
-      const res = await fetch('/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question })
-      });
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const question = userInput.value.trim();
+      if (!question) return;
 
-      const data = await res.json();
-      responseBox.innerText = data.answer || data.error || 'No response.';
+      appendMessage("user", question);
+      appendMessage("bot", "I'm thinking...");
+
+      const humor = +document.getElementById("humorSlider").value;
+      const professional = +document.getElementById("professionalSlider").value;
+      const inspirational = +document.getElementById("inspirationalSlider").value;
+
+      userInput.value = "";
+
+      try {
+        const response = await fetch("/query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question, tone: { humor, professional, inspirational } })
+        });
+        const data = await response.json();
+        updateLastBotMessage(data.answer);
+      } catch (err) {
+        updateLastBotMessage("⚠️ Error: Unable to get response.");
+      }
+    });
+
+    function appendMessage(sender, text) {
+      const message = document.createElement("div");
+      message.className = sender === "user" ? "user-message" : "bot-message";
+      message.textContent = text;
+      chatBox.appendChild(message);
+      chatBox.scrollTop = chatBox.scrollHeight;
     }
+
+    function updateLastBotMessage(text) {
+      const messages = document.querySelectorAll(".bot-message");
+      if (messages.length > 0) {
+        messages[messages.length - 1].textContent = text;
+      }
+    }
+
+    toggleMode.onclick = () => {
+      document.body.classList.toggle("dark-mode");
+      toggleMode.textContent = document.body.classList.contains("dark-mode") ? "Light Mode" : "Dark Mode";
+    };
+
+    toggleSliders.onclick = () => {
+      slidersDiv.style.display = slidersDiv.style.display === "flex" ? "none" : "flex";
+    };
   </script>
 </body>
 </html>
