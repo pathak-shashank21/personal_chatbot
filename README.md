@@ -116,14 +116,32 @@ curl -X POST https://f3a1-xxx.ngrok-free.app/query   -H "Content-Type: applicati
 
 ## 🧠 Adding / Updating Knowledge
 
-1. Add your documents as JSON or text chunks
+1. **Place your documents** (PDFs, `.json`, `.txt`) into a folder called `data/`:
+   ```
+   personal_chatbot/
+   └── data/
+       ├── CV.pdf
+       ├── thesis.pdf
+       ├── publications.json
+       └── references.txt
+   ```
+
 2. Run the index builder:
 
 ```bash
 python build_index.py
 ```
 
-This will create or update the FAISS vector index.
+This will:
+- Load and chunk the documents from `data/`
+- Create embeddings using `HuggingFaceEmbeddings`
+- Save the FAISS vector index to `faiss_index/`
+
+> 📝 If `data/` doesn't exist, create it manually:
+>
+> ```bash
+> mkdir data
+> ```
 
 ---
 
@@ -136,6 +154,7 @@ personal_chatbot/
 │   ├── index.html           # Frontend UI
 │   └── __init__.py
 ├── api.py                   # Flask backend (note: OUTSIDE the app folder)
+├── data/                    # Your documents go here (PDF, TXT, JSON)
 ├── faiss_index/
 │   └── index.faiss
 ├── build_index.py
